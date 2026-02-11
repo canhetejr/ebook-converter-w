@@ -50,7 +50,7 @@
   function updateSubtitle() {
     var subtitle = document.querySelector(".header__subtitle");
     if (subtitle) {
-      subtitle.textContent = "Arraste um .docx aqui ou clique para escolher. Até " + MAX_SIZE_MB + " MB.";
+      subtitle.textContent = "Envie um .docx (até " + MAX_SIZE_MB + " MB)";
     }
   }
 
@@ -200,13 +200,15 @@
       convertDocxToEbook(buffer, config)
         .then(function (text) {
           lastConvertedText = text;
-          downloadText(text, selectedFile.name);
-          setState("success");
           var validation = typeof validateBlocksJson !== "undefined" ? validateBlocksJson(text) : { valid: true };
           if (!validation.valid && validation.message) {
-            statusEl.textContent = "Arquivo baixado. Aviso: " + validation.message;
-            statusEl.className = "status status--warning";
+            setState("error");
+            errorEl.textContent = validation.message;
+            errorEl.classList.add("error--visible");
+            return;
           }
+          downloadText(text, selectedFile.name);
+          setState("success");
         })
         .catch(function (err) {
           setState("error");

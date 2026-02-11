@@ -256,7 +256,7 @@
           var part0 = colonIdx !== -1 ? aux.slice(0, colonIdx) : aux;
           var part1 = colonIdx !== -1 ? aux.slice(colonIdx + 1) : "";
           var itemOut = opts.itemTemplate || "{{titulo}}: {{content}}";
-          itemOut = itemOut.replace(/\{\{titulo\}\}/g, escapeJsonString(part0)).replace(/\{\{content\}\}/g, "%3Cp%20style='text-align:%20justify;'%3E" + part1 + "%3C/p%3E%0A");
+          itemOut = itemOut.replace(/\{\{titulo\}\}/g, escapeJsonString(part0)).replace(/\{\{content\}\}/g, escapeJsonString("%3Cp%20style='text-align:%20justify;'%3E" + part1 + "%3C/p%3E%0A"));
           items += itemOut + "\n";
         }
         output = output.replace(/\{\{items\}\}/g, items.slice(0, items.lastIndexOf("\n")));
@@ -303,7 +303,7 @@
         }
         output = output.replace(/\{\{titulo\}\}/g, escapeJsonString(titulo));
       }
-      output = output.replace(/\{\{content\}\}/g, content);
+      output = output.replace(/\{\{content\}\}/g, escapeJsonString(content));
       return output;
     }
 
