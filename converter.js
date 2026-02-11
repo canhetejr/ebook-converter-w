@@ -1,11 +1,17 @@
 /**
- * Conversor DOCX → E-Book (texto com tags) — roda no browser.
- * Porta da lógica do backend Python (docx_to_ebook.py).
+ * Conversor DOCX → E-Book (texto com tags) — modular, guiado por config.
+ * Suporta extração de imagens do DOCX (word/media/).
  */
 (function (global) {
   "use strict";
 
   var NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+
+  // Config padrão (fallback se não receber config)
+  var DEFAULT_CONFIG = {
+    maxFileSizeMB: 100,
+    tags: []
+  };
 
   function hasAttr(el, localName) {
     if (!el || !el.getElementsByTagNameNS) return false;
@@ -27,8 +33,6 @@
       bold: !!rPr && hasAttr(rPr, "b"),
       italic: !!rPr && hasAttr(rPr, "i"),
       underline: !!rPr && hasAttr(rPr, "u"),
-      subscript: !!rPr && hasAttr(rPr, "vertAlign"), // simplificado
-      superscript: !!rPr && hasAttr(rPr, "vertAlign"),
     };
   }
 
@@ -83,8 +87,9 @@
     for (var i = 0; i < runs.length; i++) {
       var r = runs[i];
       var t = r.text;
+      var fa;
       if (r.bold && r.italic && r.underline) {
-        var fa = formatarAspas(t, numeroAspas);
+        fa = formatarAspas(t, numeroAspas);
         t = fa.texto;
         numeroAspas = fa.numeroAspas;
         t = t.replace(/%/g, "%25");
@@ -119,7 +124,7 @@
         numeroAspas = fa.numeroAspas;
         t = t.replace(/%/g, "%25");
         t = "%3Cspan%20style=%22text-decoration:%20underline;%22%3E" + t + "%3C/span%3E";
-      } else if ((t.indexOf('"') !== -1 || t.indexOf("%") !== -1)) {
+      } else if (t.indexOf('"') !== -1 || t.indexOf("%") !== -1) {
         fa = formatarAspas(t, numeroAspas);
         t = fa.texto;
         numeroAspas = fa.numeroAspas;
@@ -181,181 +186,176 @@
     return out.replace(/<sub> <\/sub>/g, "").replace(/<sup> <\/sup>/g, "").replace(/ /g, "");
   }
 
-  function processParagraph(doc, paragrafoStrip, paragrafoIndice, proxParagrafo, paragrafosTotais, listaParagrafos, listaAuxiliar, padraoTitulo, padraoFormula) {
-    var texto = "";
-    var paras = doc.paragraphs;
-
-    if (paragrafoStrip.toUpperCase().slice(0, 7) === "UNIDADE") {
-      return "<h2 class=\"title-vg\">" + paragrafoStrip.toUpperCase() + "</h2>";
-    }
-
-    if (paragrafoStrip && /^\d/.test(paragrafoStrip)) {
-      var match = paragrafoStrip.match(padraoTitulo);
-      if (match) {
-        var valorTitulo = match[1];
-        var num = valorTitulo.replace(/\./g, "").length;
-        if (num === 1) return paragrafoStrip.replace(valorTitulo + " ", "<h4 class=\"subtitlei-vg\">") + "</h4>";
-        if (num === 2) return "<p></p><h5 class=\"subtitleii-vg\">" + paragrafoStrip.replace(valorTitulo + " ", "") + "</h5>";
-        return "<p></p><h6 class=\"subtitleiii-vg\">" + paragrafoStrip.replace(valorTitulo + " ", "") + "</h6>";
+  function matchPattern(text, pattern) {
+    var lower = text.toLowerCase();
+    if (Array.isArray(pattern)) {
+      for (var i = 0; i < pattern.length; i++) {
+        if (lower.indexOf(pattern[i].toLowerCase()) !== -1) return pattern[i];
       }
+      return null;
     }
+    if (pattern.indexOf("^") === 0) {
+      var re = new RegExp(pattern);
+      return re.test(text) ? pattern : null;
+    }
+    return lower.indexOf(pattern.toLowerCase()) !== -1 ? pattern : null;
+  }
 
+  function processTag(tag, paras, paragrafoStrip, paragrafoIndice, proxParagrafo, listaParagrafos, listaAuxiliar, images) {
     var lower = paragrafoStrip.toLowerCase();
-    if (lower.indexOf("#introdução#") !== -1) {
-      texto = "<div class=\"L-INTRODUCAO\" data-interaction=\"true\"><div>{\"texto\":\"";
-      for (var i = 0; i < listaParagrafos.length; i++) {
-        texto += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
-      }
-      return texto + "\"}</div>Introdução</div>";
-    }
-    if (lower.indexOf("#conclusão#") !== -1) {
-      texto = "<div class=\"L-CONCLUSION\" data-interaction=\"true\"><div>{\"texto\":\"";
-      for (i = 0; i < listaParagrafos.length; i++) {
-        texto += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
-      }
-      return texto + "\"}</div>Conclusão</div>";
-    }
-    if (lower.indexOf("#referências#") !== -1) {
-      texto = "<div class=\"L-REFERENCIASBB\" data-interaction=\"true\"><div>{\"texto\":\"";
-      for (i = 0; i < listaParagrafos.length; i++) {
-        texto = formatarTextoEstilo(paras[listaParagrafos[i]].runs, texto);
-        var pt = paras[listaParagrafos[i]].text;
-        if (texto.indexOf("<>") !== -1 && pt.indexOf("<") !== -1 && pt.indexOf(">") !== -1) {
-          var link = pt.split("<")[1].split(">")[0];
-          texto = texto.replace("<>", "%3Ca%20href='" + link + "'%20target='_blank'%20rel='noopener'%3E" + link + "%3C/a%3E");
+    var matched = matchPattern(paragrafoStrip, tag.pattern);
+    if (!matched) return null;
+
+    var output = tag.outputTemplate;
+    var opts = tag.options || {};
+
+    if (tag.type === "block") {
+      var content = "";
+      if (opts.formatAsList) {
+        for (var i = 0; i < listaParagrafos.length; i++) {
+          var aux = formatarBoxTexto(paras[listaParagrafos[i]].runs);
+          if (i === 0) content += "%3Cp%20style='text-align:%20justify;'%3E" + aux + "%3C/p%3E%0A%3Cul%3E%0A";
+          else content += "%3Cli%20style='text-align:%20justify;'%3E" + aux + "%3Cbr%20/%3E%3Cbr%20/%3E%3C/li%3E%0A";
+        }
+        content += "%3C/ul%3E";
+      } else if (opts.formatAsGlossary) {
+        content = "%3Col%3E%0A";
+        for (i = 0; i < listaParagrafos.length; i++) {
+          aux = formatarBoxTexto(paras[listaParagrafos[i]].runs).replace(": ", ": %3C/strong%3E");
+          content += "%3Cli%20style='text-align:%20justify;'%3E%3Cstrong%3E" + aux + "%3Cbr%20/%3E%3Cbr%20/%3E%3C/li%3E%0A";
+        }
+        content += "%3C/ol%3E";
+      } else if (opts.useEstilo) {
+        for (i = 0; i < listaParagrafos.length; i++) {
+          content = formatarTextoEstilo(paras[listaParagrafos[i]].runs, content);
+          var pt = paras[listaParagrafos[i]].text;
+          if (content.indexOf("<>") !== -1 && pt.indexOf("<") !== -1 && pt.indexOf(">") !== -1) {
+            var link = pt.split("<")[1].split(">")[0];
+            content = content.replace("<>", "%3Ca%20href='" + link + "'%20target='_blank'%20rel='noopener'%3E" + link + "%3C/a%3E");
+          }
+        }
+      } else if (opts.splitByColon) {
+        var items = "";
+        for (i = 0; i < listaParagrafos.length; i++) {
+          aux = formatarBoxTexto(paras[listaParagrafos[i]].runs);
+          var colonIdx = aux.indexOf(":");
+          var part0 = colonIdx !== -1 ? aux.slice(0, colonIdx) : aux;
+          var part1 = colonIdx !== -1 ? aux.slice(colonIdx + 1) : "";
+          var itemOut = opts.itemTemplate || "{{titulo}}: {{content}}";
+          itemOut = itemOut.replace(/\{\{titulo\}\}/g, part0).replace(/\{\{content\}\}/g, "%3Cp%20style='text-align:%20justify;'%3E" + part1 + "%3C/p%3E%0A");
+          items += itemOut + "\n";
+        }
+        output = output.replace(/\{\{items\}\}/g, items.slice(0, items.lastIndexOf("\n")));
+        return output;
+      } else if (opts.checkForLink) {
+        var linkFound = "";
+        for (i = 0; i < listaParagrafos.length; i++) {
+          if (paras[listaParagrafos[i]].text.indexOf("http") === 0) {
+            linkFound = paras[listaParagrafos[i]].text;
+          } else {
+            content += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
+          }
+        }
+        output = output.replace(/\{\{link\}\}/g, linkFound);
+      } else if (opts.extractVideoLink) {
+        linkFound = "";
+        for (i = 0; i < listaParagrafos.length; i++) {
+          var tx = paras[listaParagrafos[i]].text;
+          if (tx.indexOf("http") === 0) linkFound = tx;
+          else content += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
+        }
+        var titulo = "";
+        if (opts.dynamicTitle) {
+          for (var key in opts.dynamicTitle) {
+            if (lower.indexOf(key) !== -1) {
+              titulo = opts.dynamicTitle[key];
+              break;
+            }
+          }
+        }
+        output = output.replace(/\{\{titulo\}\}/g, titulo).replace(/\{\{link\}\}/g, linkFound);
+      } else {
+        for (i = 0; i < listaParagrafos.length; i++) {
+          content += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
         }
       }
-      return texto + "\"}</div>Referências Bibliográficas</div><p></p>";
-    }
-    if (lower.indexOf("#apresentação#") !== -1 || lower.indexOf("#destaque#") !== -1) {
-      texto = "<div class=\"D-DESTAQUE\" data-interaction=\"true\"><div>{\"destaque\":\"";
-      for (i = 0; i < listaParagrafos.length; i++) {
-        texto += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
+      if (opts.dynamicTitle && !opts.extractVideoLink) {
+        titulo = "";
+        for (key in opts.dynamicTitle) {
+          if (lower.indexOf(key) !== -1) {
+            titulo = opts.dynamicTitle[key];
+            break;
+          }
+        }
+        output = output.replace(/\{\{titulo\}\}/g, titulo);
       }
-      return texto + "\"}</div>Destaque</div>";
+      output = output.replace(/\{\{content\}\}/g, content);
+      return output;
     }
-    if (lower.indexOf("#citação#") !== -1) {
-      texto = "<div class=\"D-CDIRETA\" data-interaction=\"true\"><div>{\"texto\":\"";
-      for (i = 0; i < listaParagrafos.length; i++) {
-        texto += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
+
+    if (tag.type === "single") {
+      if (opts.extractLink) {
+        var linkContent = paragrafoStrip.replace(new RegExp(matched, "gi"), "").trim();
+        return output.replace(/\{\{link\}\}/g, linkContent);
       }
-      return texto + "\"}</div>Recuo</div>";
-    }
-    if (lower.indexOf("#caixa#") !== -1) {
-      texto = "<div class=\"D-CAIXA\" data-interaction=\"true\"><div>{\"caixa\":\"";
-      for (i = 0; i < listaParagrafos.length; i++) {
-        var aux = formatarBoxTexto(paras[listaParagrafos[i]].runs);
-        if (i === 0) texto += "%3Cp%20style='text-align:%20justify;'%3E" + aux + "%3C/p%3E%0A%3Cul%3E%0A";
-        else texto += "%3Cli%20style='text-align:%20justify;'%3E" + aux + "%3Cbr%20/%3E%3Cbr%20/%3E%3C/li%3E%0A";
+      if (opts.extractWord) {
+        var word = paragrafoStrip.replace(new RegExp(matched, "gi"), "").trim();
+        return output.replace(/\{\{palavra\}\}/g, word);
       }
-      return texto + "%3C/ul%3E\"}</div>Caixa</div>";
     }
-    if (lower.indexOf("#glossário#") !== -1) {
-      texto = "<div class=\"U-SEARCHBLOCK\" data-interaction=\"true\"><div>{\"title\":\"Glossário\",\"conteudo\":\"%3Col%3E%0A";
-      for (i = 0; i < listaParagrafos.length; i++) {
-        aux = formatarBoxTexto(paras[listaParagrafos[i]].runs).replace(": ", ": %3C/strong%3E");
-        texto += "%3Cli%20style='text-align:%20justify;'%3E%3Cstrong%3E" + aux + "%3Cbr%20/%3E%3Cbr%20/%3E%3C/li%3E%0A";
-      }
-      return texto + "%3C/ol%3E\"}</div>Bloco Busca</div>";
-    }
-    if (lower.indexOf("#video#") !== -1) {
-      var conteudo = paragrafoStrip.replace(/#video#/gi, "").trim();
-      return "<div class=\"T-VIDEO\" data-interaction=\"true\"><div>{\"link\":\"" + conteudo + "\",\"video\":\"\",\"pdf\":\"\"}</div>Vídeo</div>";
-    }
-    if (lower.indexOf("figura ") === 0 && paragrafoIndice + 1 < paras.length) {
+
+    if (tag.type === "image" && paragrafoIndice + 1 < paras.length) {
       var titulo = paras[paragrafoIndice].text.split(":");
       var fonte = paras[paragrafoIndice + 1].text.split(":");
-      var figura = "https://i.pinimg.com/736x/be/09/97/be0997e2d5732322bf552c6f2883c86e.jpg";
+      var imagem = "";
+      if (opts.extractFromMedia && images.length > 0) {
+        imagem = images.shift();
+      } else {
+        imagem = "https://i.pinimg.com/736x/be/09/97/be0997e2d5732322bf552c6f2883c86e.jpg";
+      }
       listaAuxiliar.push(proxParagrafo);
-      return "<div class=\"T-FIGURA\" data-interaction=\"true\"><div>{\"titulo\":\"" + (titulo[1] || "").trim() + "\",\"fonte\":\"" + (fonte[1] || "").trim() + "\",\"accessibility\":\"" + (titulo[1] || "").trim() + "\",\"imagem\":\"" + figura + "\"}</div>Figura</div>";
-    }
-    if (lower.indexOf("quadro ") === 0 && paragrafoIndice + 1 < paras.length) {
-      var tabela = "%3Ctable%20style='border-collapse:%20collapse;%20width:%20100%25;'%20border='1'%3E%0A%3Ctbody%3E%0A%3Ctr%3E%0A%3Ctd%20style='width:%20100%25;'%3EQuadro%3C/td%3E%0A%3C/tr%3E%0A%3C/tbody%3E%0A%3C/table%3E";
-      titulo = paras[paragrafoIndice].text.split(":");
-      fonte = paras[paragrafoIndice + 1].text.split(":");
-      listaAuxiliar.push(proxParagrafo);
-      return "<div class=\"T-QUADRO\" data-interaction=\"true\"><div>{\"titulo\":\"" + (titulo[1] || "").trim() + "\",\"fonte\":\"" + (fonte[1] || "").trim() + "\",\"texto\":\"" + tabela + "\",\"accessibility\":\"" + (titulo[1] || "").trim() + "\",\"quadro\":\"\"}</div>Quadro</div>";
-    }
-    if (lower.indexOf("#reflita#") !== -1) {
-      texto = "<div class=\"B-REFLITA\" data-interaction=\"true\"><div>{\"conteudo\":\"";
-      for (i = 0; i < listaParagrafos.length; i++) {
-        texto += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
+      output = output.replace(/\{\{titulo\}\}/g, (titulo[1] || "").trim());
+      output = output.replace(/\{\{fonte\}\}/g, (fonte[1] || "").trim());
+      output = output.replace(/\{\{imagem\}\}/g, imagem);
+      if (opts.defaultTable) {
+        output = output.replace(/\{\{tabela\}\}/g, opts.defaultTable);
       }
-      return texto + "\",\"link\":\"\",\"pdf\":\"\"}</div>Reflita</div>";
-    }
-    if (lower.indexOf("#saiba mais#") !== -1) {
-      texto = "<div class=\"U-SAIBAMAIS\" data-interaction=\"true\"><div>{\"conteudo\":\"";
-      for (i = 0; i < listaParagrafos.length; i++) {
-        if (paras[listaParagrafos[i]].text.indexOf("http") === 0) {
-          texto += "\",\"link\":\"" + paras[listaParagrafos[i]].text + "\",\"pdf\":\"\"}}</div>Saiba Mais</div>";
-          return texto;
-        }
-        texto += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
-      }
-      return texto;
-    }
-    if (lower.indexOf("#atenção#") !== -1) {
-      texto = "<div class=\"U-ATENCAO\" data-interaction=\"true\"><div>{\"conteudo\":\"";
-      for (i = 0; i < listaParagrafos.length; i++) {
-        texto += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
-      }
-      return texto + "\",\"pdf\":\"\"}</div>Atenção</div>";
-    }
-    if (lower.indexOf("#dica#") !== -1) {
-      texto = "<div class=\"B-DICA\" data-interaction=\"true\"><div>{\"conteudo\":\"";
-      for (i = 0; i < listaParagrafos.length; i++) {
-        texto += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
-      }
-      return texto + "\",\"imagem\":\"\"}</div>Dica</div>";
-    }
-    if (lower.indexOf("#técnico#") !== -1) {
-      texto = "<div class=\"D-PROGRAMACAO\" data-interaction=\"true\"><div>{\"texto\":\"";
-      for (i = 0; i < listaParagrafos.length; i++) {
-        texto += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
-      }
-      return texto + "\"}</div>Técnico</div>";
-    }
-    if (lower.indexOf("#dica de livro#") !== -1 || lower.indexOf("#dica do professor#") !== -1 || lower.indexOf("#dica de leitura#") !== -1) {
-      if (lower.indexOf("#dica de livro#") !== -1) texto = "<div class=\"B-GREEN\" data-interaction=\"true\"><div>{\"titulo\":\"Dica de Livro\",\"conteudo\":\"";
-      else if (lower.indexOf("#dica de leitura#") !== -1) texto = "<div class=\"B-GREEN\" data-interaction=\"true\"><div>{\"titulo\":\"Dica de Leitura\",\"conteudo\":\"";
-      else texto = "<div class=\"B-GREEN\" data-interaction=\"true\"><div>{\"titulo\":\"Dica do Professor(a)\",\"conteudo\":\"";
-      for (i = 0; i < listaParagrafos.length; i++) {
-        texto += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
-      }
-      return texto + "\",\"imagem\":\"https://dbunicv.realize.pro.br/files/bbe7a7d8253ab4d19c641e74a008e50d.jpg\"}</div>Esquerda</div>";
-    }
-    if (lower.indexOf("#indicação de filme#") !== -1 || lower.indexOf("#na web#") !== -1 || lower.indexOf("#dica de filme#") !== -1) {
-      var link = "";
-      if (lower.indexOf("#indicação de filme#") !== -1 || lower.indexOf("#dica de filme#") !== -1) texto = "<div class=\"B-BLUE\" data-interaction=\"true\"><div>{\"titulo\":\"Indicação de Filme\",\"conteudo\":\"";
-      else texto = "<div class=\"B-BLUE\" data-interaction=\"true\"><div>{\"titulo\":\"Na Web\",\"conteudo\":\"";
-      for (i = 0; i < listaParagrafos.length; i++) {
-        var tx = paras[listaParagrafos[i]].text;
-        if (tx.indexOf("http") !== 0) {
-          texto += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
-        } else link = tx;
-      }
-      return texto + "\",\"imagem\":\"https://dbunicv.realize.pro.br/files/851d95d42b89c5b0b24155447cf81d6b.jpg\"}</div>Direita</div><div class=\"T-VIDEO\" data-interaction=\"true\"><div>{\"link\":\"" + link + "\",\"video\":\"\",\"pdf\":\"\"}</div>Vídeo</div>";
-    }
-    if (lower.indexOf("#infográfico interativo#") !== -1) {
-      texto = "";
-      for (i = 0; i < listaParagrafos.length; i++) {
-        aux = formatarBoxTexto(paras[listaParagrafos[i]].runs);
-        var colonIdx = aux.indexOf(":");
-        var part0 = colonIdx !== -1 ? aux.slice(0, colonIdx) : aux;
-        var part1 = colonIdx !== -1 ? aux.slice(colonIdx + 1) : "";
-        texto += "<div class=\"I-ZSANFONA\" data-interaction=\"true\"><div>{\"titulo\":\"<strong>" + part0 + ":</strong>\",\"conteudo\":\"%3Cp%20style='text-align:%20justify;'%3E" + part1 + "%3C/p%3E%0A\"}</div>Sanfona</div>\n";
-      }
-      return texto.slice(0, texto.lastIndexOf("\n"));
-    }
-    if (lower.indexOf("#forca") !== -1) {
-      var conteudoForca = paragrafoStrip.replace(/#forca/gi, "").trim();
-      return "<div class=\"I-JOGOFORCA\" data-interaction=\"true\"><div>{\"palavra\":\"" + conteudoForca + "\"}</div>Forca</div><p></p>";
+      return output;
     }
 
-    // Parágrafo normal
+    if (tag.type === "title") {
+      if (opts.uppercase) {
+        return output.replace(/\{\{text\}\}/g, paragrafoStrip.toUpperCase());
+      }
+      if (opts.isNumeric) {
+        var match = paragrafoStrip.match(/^(.*?)\s/);
+        if (match) {
+          var valorTitulo = match[1];
+          var num = valorTitulo.replace(/\./g, "").length;
+          if (num === 1) return "<h4 class=\"subtitlei-vg\">" + paragrafoStrip.replace(valorTitulo + " ", "") + "</h4>";
+          if (num === 2) return "<p></p><h5 class=\"subtitleii-vg\">" + paragrafoStrip.replace(valorTitulo + " ", "") + "</h5>";
+          return "<p></p><h6 class=\"subtitleiii-vg\">" + paragrafoStrip.replace(valorTitulo + " ", "") + "</h6>";
+        }
+      }
+      return output.replace(/\{\{text\}\}/g, paragrafoStrip);
+    }
+
+    return null;
+  }
+
+  function processParagraph(doc, paragrafoStrip, paragrafoIndice, proxParagrafo, listaParagrafos, listaAuxiliar, config, images) {
+    var paras = doc.paragraphs;
     if (proxParagrafo - 1 < 0) return "";
+
+    for (var i = 0; i < config.tags.length; i++) {
+      var tag = config.tags[i];
+      var result = processTag(tag, paras, paragrafoStrip, paragrafoIndice, proxParagrafo, listaParagrafos, listaAuxiliar, images);
+      if (result !== null) return result;
+    }
+
+    // Parágrafo normal (sem tag)
     var p = paras[proxParagrafo - 1];
-    texto = "";
+    var texto = "";
     for (i = 0; i < p.runs.length; i++) {
       var run = p.runs[i];
       var rt = run.text;
@@ -364,14 +364,17 @@
       if (run.underline) rt = "<u>" + rt + "</u>";
       texto += rt;
     }
+
     if (p.styleName && p.styleName.indexOf("List") === 0) {
       texto = "<li style=\"text-align: justify;\">" + texto + "<br/><br/></li>";
     } else {
       texto = (texto.trim() !== "" ? "<p style=\"text-align: justify;\">" + texto + "</p>" : "<p>" + texto + "</p>");
     }
+
     texto = texto.replace(/\n/g, "</p>|<p style=\"text-align: justify;\">");
     texto = texto.replace(/<strong><strong>/g, "<strong>").replace(/<\/strong><\/strong>/g, "</strong>").replace(/<\/strong><strong>/g, "").replace(/<\/strong> <strong>/g, " ");
     texto = texto.replace(/<\/strong><\/em><em><strong>/g, "").replace(/<em><em>/g, "<em>").replace(/<\/em><\/em>/g, "</em>").replace(/<\/em> <\/em>/g, " ").replace(/<\/em> <em>/g, " ").replace(/<\/em><em>/g, "");
+
     var formulaMatch = texto.match(/\{\{(.*?)\}\}/g);
     if (formulaMatch) {
       for (i = 0; i < formulaMatch.length; i++) {
@@ -379,6 +382,7 @@
         texto = texto.replace("{{" + fm + "}}", "<em>" + substituirFormula(fm) + "</em>");
       }
     }
+
     if (texto.indexOf("</p>|<p") !== -1) {
       var partes = texto.split("|");
       var out = [];
@@ -388,11 +392,12 @@
       }
       return out;
     }
+
     if (texto !== "<p></p>" && texto !== "<p> </p>") return texto;
     return "";
   }
 
-  function processDocument(doc) {
+  function processDocument(doc, config, images) {
     var paragrafosTotais = doc.paragraphs.length;
     if (paragrafosTotais === 0) return [];
     var html = [];
@@ -402,8 +407,6 @@
     var listaAuxiliar = [];
     var paragrafoIndice = -1;
     var marcaNoTexto = [];
-    var padraoTitulo = /^(.*?)\s/;
-    var padraoFormula = /\{\{(.*?)\}\}/;
 
     for (var idx = 0; idx < doc.paragraphs.length; idx++) {
       var paragrafo = doc.paragraphs[idx];
@@ -451,7 +454,7 @@
 
       var result;
       try {
-        result = processParagraph(doc, paragrafoStrip, paragrafoIndice, proxParagrafo, paragrafosTotais, listaParagrafos, listaAuxiliar, padraoTitulo, padraoFormula);
+        result = processParagraph(doc, paragrafoStrip, paragrafoIndice, proxParagrafo, listaParagrafos, listaAuxiliar, config, images);
       } catch (e) {
         throw new Error("Erro ao processar parágrafo: " + e.message);
       }
@@ -468,19 +471,41 @@
     return html;
   }
 
+  function extractImages(zip) {
+    var images = [];
+    var mediaFiles = [];
+    zip.folder("word/media").forEach(function (relativePath, file) {
+      if (!file.dir) mediaFiles.push(file);
+    });
+    if (mediaFiles.length === 0) return Promise.resolve(images);
+
+    var promises = mediaFiles.map(function (file) {
+      return file.async("base64").then(function (base64) {
+        var ext = file.name.split(".").pop().toLowerCase();
+        var mime = "image/" + (ext === "jpg" ? "jpeg" : ext);
+        return "data:" + mime + ";base64," + base64;
+      });
+    });
+    return Promise.all(promises);
+  }
+
   /**
    * Converte um DOCX (ArrayBuffer) para o texto no formato E-Book.
    * @param {ArrayBuffer} arrayBuffer - Bytes do arquivo .docx
+   * @param {Object} config - Configuração de tags (opcional; usa padrão se não fornecido)
    * @returns {Promise<string>} Conteúdo do .txt (linhas separadas por \n)
    */
-  function convertDocxToEbook(arrayBuffer) {
+  function convertDocxToEbook(arrayBuffer, config) {
     return new Promise(function (resolve, reject) {
       if (typeof global.JSZip === "undefined") {
         reject(new Error("JSZip não carregado. Inclua o script JSZip antes do conversor."));
         return;
       }
+      var cfg = config || DEFAULT_CONFIG;
+      var zip;
       global.JSZip.loadAsync(arrayBuffer)
-        .then(function (zip) {
+        .then(function (z) {
+          zip = z;
           var entry = zip.file("word/document.xml");
           if (!entry) {
             reject(new Error("Arquivo inválido ou corrompido (document.xml não encontrado)."));
@@ -489,10 +514,15 @@
           return entry.async("string");
         })
         .then(function (xmlStr) {
+          return extractImages(zip).then(function (images) {
+            return { xmlStr: xmlStr, images: images };
+          });
+        })
+        .then(function (data) {
           var parser = new global.DOMParser();
-          var xmlDoc = parser.parseFromString(xmlStr, "text/xml");
+          var xmlDoc = parser.parseFromString(data.xmlStr, "text/xml");
           var doc = { paragraphs: parseDocxXml(xmlDoc) };
-          var html = processDocument(doc);
+          var html = processDocument(doc, cfg, data.images);
           resolve(html.join("\n"));
         })
         .catch(function (err) {

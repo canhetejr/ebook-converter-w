@@ -1,13 +1,23 @@
 # Conversor E-Book (Web)
 
-Aplicação web para converter arquivos DOCX com tags no formato E-Book (arquivo de texto). **Tudo roda no navegador** — não há API nem servidor; basta publicar os arquivos estáticos (por exemplo no GitHub Pages) e abrir o site.
+Aplicação web para converter arquivos DOCX com tags no formato E-Book (arquivo de texto). **Tudo roda no navegador** — não há API nem servidor; basta publicar os arquivos estáticos (GitHub Pages) e abrir o site.
+
+## Características
+
+- **100% no browser:** conversão DOCX → texto com JavaScript (JSZip + DOM Parser).
+- **Tags configuráveis:** arquivo `tags-config.json` define todas as tags, tipos e templates de saída.
+- **Área admin integrada:** edite tags, ajuste o limite de tamanho e baixe o JSON atualizado para commit.
+- **Suporte a imagens:** extrai imagens do DOCX (word/media/) e inclui como data URLs (base64) na saída.
+- **Design Apple:** interface limpa, leve, com fundo claro, tipografia sistemática e estados visuais claros.
 
 ## Estrutura
 
-- **index.html** — Página única do app (upload, conversão, download).
-- **styles.css** — Estilos da interface.
-- **app.js** — Orquestração: drag-and-drop, validação, chamada ao conversor, download do .txt.
-- **converter.js** — Lógica de conversão DOCX → texto; usa JSZip para ler o .docx no browser.
+- **index.html** — Página única: zona de upload (drag-and-drop), conversão, admin.
+- **styles.css** — Estilos (paleta Apple, dark mode opcional).
+- **app.js** — Orquestração: carrega config, upload, validação, conversão, download.
+- **converter.js** — Lógica de conversão modular (guiada por `tags-config.json`).
+- **admin.js** — Painel admin: CRUD de tags, edição do limite de tamanho, download do JSON.
+- **tags-config.json** — Configuração: `maxFileSizeMB` e array `tags` (id, name, pattern, type, outputTemplate, options).
 
 ## Uso
 
@@ -15,7 +25,60 @@ Aplicação web para converter arquivos DOCX com tags no formato E-Book (arquivo
 2. Arraste um arquivo .docx para a zona de upload ou clique para escolher.
 3. Clique em **Converter**. O arquivo .txt será gerado e baixado automaticamente (mesmo nome do .docx, com extensão .txt).
 
-Requisitos: arquivo Word (.docx) com tags (ex.: `#Introdução#`, `#Destaque#`, `#Conclusão#`). Limite: 20 MB.
+Requisitos: arquivo Word (.docx) com tags conforme configuradas em `tags-config.json`. Limite padrão: **100 MB** (ajustável no config).
+
+## Configuração de tags (tags-config.json)
+
+O arquivo `tags-config.json` define:
+
+- **maxFileSizeMB** (number): tamanho máximo aceito (ex.: 100).
+- **tags** (array): cada tag com:
+  - **id** (string): identificador único.
+  - **name** (string): nome exibido (admin e ajuda).
+  - **pattern** (string ou array): padrão(es) em minúsculas para reconhecer no texto (ex.: `"#introdução#"` ou `["#destaque#", "#apresentação#"]`).
+  - **type** (string): `"block"` (conteúdo entre tags), `"single"` (linha única), `"title"` (títulos), `"image"` (figura/quadro), `"special"` (regras customizadas).
+  - **outputTemplate** (string): template de saída com placeholders (ex.: `{{content}}`, `{{link}}`, `{{titulo}}`, `{{imagem}}`).
+  - **options** (objeto, opcional): opções específicas (ex.: `hasLink`, `formatAsList`, `extractFromMedia`).
+
+Exemplo mínimo:
+
+```json
+{
+  "maxFileSizeMB": 100,
+  "tags": [
+    {
+      "id": "introducao",
+      "name": "Introdução",
+      "pattern": "#introdução#",
+      "type": "block",
+      "outputTemplate": "<div>{{content}}</div>"
+    }
+  ]
+}
+```
+
+## Área admin
+
+1. Clique em **"Configurar tags"** no header.
+2. Painel lateral abre com:
+   - Campo "Tamanho máximo de arquivo (MB)".
+   - Lista de tags (editar/remover).
+   - Botão "Adicionar tag" para criar nova.
+3. Edições ficam em memória; clique em **"Baixar JSON"** para gerar o `tags-config.json` atualizado.
+4. Substitua o arquivo no repositório com o baixado e faça commit.
+5. No próximo acesso ao site, o novo config será carregado.
+
+Não há salvamento automático; o fluxo é: editar no admin → baixar JSON → commit no Git → deploy.
+
+## Imagens
+
+Quando o DOCX contém imagens (pasta `word/media/` interna ao ZIP) e uma tag do tipo `"image"` (ex.: Figura, Quadro) com `options.extractFromMedia: true`, o conversor:
+
+- Extrai as imagens em ordem.
+- Converte para base64 (data URL).
+- Preenche o placeholder `{{imagem}}` no template com o data URL.
+
+Fallback: se não houver imagens suficientes, usa URL padrão do template ou vazio.
 
 ## Deploy no GitHub Pages (tudo via Git)
 
@@ -35,10 +98,20 @@ Abra o `index.html` diretamente no navegador (duplo clique) ou sirva a pasta com
 python -m http.server 8080
 ```
 
-Depois acesse `http://localhost:8080`. Não é necessário rodar a API; a conversão é feita no cliente.
+Depois acesse `http://localhost:8080`. O config e o conversor funcionam offline; imagens são extraídas do DOCX sem requisição externa.
 
 ## Dependências (incluídas via CDN)
 
-- **JSZip** — Leitura do arquivo .docx (ZIP) no browser. Carregado via unpkg em `index.html`.
+- **JSZip** (3.10.1) — Leitura do arquivo .docx (ZIP) no browser. Carregado via unpkg em `index.html`.
 
-O restante usa apenas APIs nativas do navegador (FileReader, DOMParser, Blob).
+O restante usa apenas APIs nativas do navegador (FileReader, DOMParser, Blob, fetch).
+
+## Personalização
+
+Para adicionar ou ajustar tags:
+
+1. Use a área admin (recomendado) ou edite `tags-config.json` manualmente.
+2. Faça commit do JSON atualizado.
+3. Publique no GitHub Pages.
+
+O conversor se adapta automaticamente ao config; não é necessário alterar código JavaScript para novas tags simples (apenas templates e padrões no JSON).

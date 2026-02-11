@@ -1,0 +1,204 @@
+{
+  "maxFileSizeMB": 100,
+  "tags": [
+    {
+      "id": "introducao",
+      "name": "Introdução",
+      "pattern": "#introdução#",
+      "type": "block",
+      "outputTemplate": "<div class=\"L-INTRODUCAO\" data-interaction=\"true\"><div>{\"texto\":\"{{content}}\"}</div>Introdução</div>"
+    },
+    {
+      "id": "conclusao",
+      "name": "Conclusão",
+      "pattern": "#conclusão#",
+      "type": "block",
+      "outputTemplate": "<div class=\"L-CONCLUSION\" data-interaction=\"true\"><div>{\"texto\":\"{{content}}\"}</div>Conclusão</div>"
+    },
+    {
+      "id": "referencias",
+      "name": "Referências",
+      "pattern": "#referências#",
+      "type": "block",
+      "outputTemplate": "<div class=\"L-REFERENCIASBB\" data-interaction=\"true\"><div>{\"texto\":\"{{content}}\"}</div>Referências Bibliográficas</div><p></p>",
+      "options": {
+        "hasLink": true,
+        "useEstilo": true
+      }
+    },
+    {
+      "id": "destaque",
+      "name": "Destaque/Apresentação",
+      "pattern": ["#destaque#", "#apresentação#"],
+      "type": "block",
+      "outputTemplate": "<div class=\"D-DESTAQUE\" data-interaction=\"true\"><div>{\"destaque\":\"{{content}}\"}</div>Destaque</div>"
+    },
+    {
+      "id": "citacao",
+      "name": "Citação",
+      "pattern": "#citação#",
+      "type": "block",
+      "outputTemplate": "<div class=\"D-CDIRETA\" data-interaction=\"true\"><div>{\"texto\":\"{{content}}\"}</div>Recuo</div>"
+    },
+    {
+      "id": "caixa",
+      "name": "Caixa",
+      "pattern": "#caixa#",
+      "type": "block",
+      "outputTemplate": "<div class=\"D-CAIXA\" data-interaction=\"true\"><div>{\"caixa\":\"{{content}}\"}</div>Caixa</div>",
+      "options": {
+        "formatAsList": true
+      }
+    },
+    {
+      "id": "glossario",
+      "name": "Glossário",
+      "pattern": "#glossário#",
+      "type": "block",
+      "outputTemplate": "<div class=\"U-SEARCHBLOCK\" data-interaction=\"true\"><div>{\"title\":\"Glossário\",\"conteudo\":\"{{content}}\"}</div>Bloco Busca</div>",
+      "options": {
+        "formatAsGlossary": true
+      }
+    },
+    {
+      "id": "video",
+      "name": "Vídeo",
+      "pattern": "#video#",
+      "type": "single",
+      "outputTemplate": "<div class=\"T-VIDEO\" data-interaction=\"true\"><div>{\"link\":\"{{link}}\",\"video\":\"\",\"pdf\":\"\"}</div>Vídeo</div>",
+      "options": {
+        "extractLink": true
+      }
+    },
+    {
+      "id": "reflita",
+      "name": "Reflita",
+      "pattern": "#reflita#",
+      "type": "block",
+      "outputTemplate": "<div class=\"B-REFLITA\" data-interaction=\"true\"><div>{\"conteudo\":\"{{content}}\",\"link\":\"\",\"pdf\":\"\"}</div>Reflita</div>"
+    },
+    {
+      "id": "saiba_mais",
+      "name": "Saiba Mais",
+      "pattern": "#saiba mais#",
+      "type": "block",
+      "outputTemplate": "<div class=\"U-SAIBAMAIS\" data-interaction=\"true\"><div>{\"conteudo\":\"{{content}}\",\"link\":\"{{link}}\",\"pdf\":\"\"}</div>Saiba Mais</div>",
+      "options": {
+        "checkForLink": true
+      }
+    },
+    {
+      "id": "atencao",
+      "name": "Atenção",
+      "pattern": "#atenção#",
+      "type": "block",
+      "outputTemplate": "<div class=\"U-ATENCAO\" data-interaction=\"true\"><div>{\"conteudo\":\"{{content}}\",\"pdf\":\"\"}</div>Atenção</div>"
+    },
+    {
+      "id": "dica",
+      "name": "Dica",
+      "pattern": "#dica#",
+      "type": "block",
+      "outputTemplate": "<div class=\"B-DICA\" data-interaction=\"true\"><div>{\"conteudo\":\"{{content}}\",\"imagem\":\"\"}</div>Dica</div>"
+    },
+    {
+      "id": "tecnico",
+      "name": "Técnico",
+      "pattern": "#técnico#",
+      "type": "block",
+      "outputTemplate": "<div class=\"D-PROGRAMACAO\" data-interaction=\"true\"><div>{\"texto\":\"{{content}}\"}</div>Técnico</div>"
+    },
+    {
+      "id": "dica_livro",
+      "name": "Dica de Livro",
+      "pattern": ["#dica de livro#", "#dica do professor#", "#dica de leitura#"],
+      "type": "block",
+      "outputTemplate": "<div class=\"B-GREEN\" data-interaction=\"true\"><div>{\"titulo\":\"{{titulo}}\",\"conteudo\":\"{{content}}\",\"imagem\":\"https://dbunicv.realize.pro.br/files/bbe7a7d8253ab4d19c641e74a008e50d.jpg\"}</div>Esquerda</div>",
+      "options": {
+        "dynamicTitle": {
+          "#dica de livro#": "Dica de Livro",
+          "#dica de leitura#": "Dica de Leitura",
+          "#dica do professor#": "Dica do Professor(a)"
+        }
+      }
+    },
+    {
+      "id": "indicacao_filme",
+      "name": "Indicação de Filme/Na Web",
+      "pattern": ["#indicação de filme#", "#na web#", "#dica de filme#"],
+      "type": "block",
+      "outputTemplate": "<div class=\"B-BLUE\" data-interaction=\"true\"><div>{\"titulo\":\"{{titulo}}\",\"conteudo\":\"{{content}}\",\"imagem\":\"https://dbunicv.realize.pro.br/files/851d95d42b89c5b0b24155447cf81d6b.jpg\"}</div>Direita</div><div class=\"T-VIDEO\" data-interaction=\"true\"><div>{\"link\":\"{{link}}\",\"video\":\"\",\"pdf\":\"\"}</div>Vídeo</div>",
+      "options": {
+        "dynamicTitle": {
+          "#indicação de filme#": "Indicação de Filme",
+          "#dica de filme#": "Indicação de Filme",
+          "#na web#": "Na Web"
+        },
+        "extractVideoLink": true
+      }
+    },
+    {
+      "id": "infografico",
+      "name": "Infográfico Interativo",
+      "pattern": "#infográfico interativo#",
+      "type": "block",
+      "outputTemplate": "{{items}}",
+      "options": {
+        "splitByColon": true,
+        "itemTemplate": "<div class=\"I-ZSANFONA\" data-interaction=\"true\"><div>{\"titulo\":\"<strong>{{titulo}}:</strong>\",\"conteudo\":\"{{content}}\"}</div>Sanfona</div>"
+      }
+    },
+    {
+      "id": "forca",
+      "name": "Forca",
+      "pattern": "#forca",
+      "type": "single",
+      "outputTemplate": "<div class=\"I-JOGOFORCA\" data-interaction=\"true\"><div>{\"palavra\":\"{{palavra}}\"}</div>Forca</div><p></p>",
+      "options": {
+        "extractWord": true
+      }
+    },
+    {
+      "id": "figura",
+      "name": "Figura",
+      "pattern": "figura ",
+      "type": "image",
+      "outputTemplate": "<div class=\"T-FIGURA\" data-interaction=\"true\"><div>{\"titulo\":\"{{titulo}}\",\"fonte\":\"{{fonte}}\",\"accessibility\":\"{{titulo}}\",\"imagem\":\"{{imagem}}\"}</div>Figura</div>",
+      "options": {
+        "readNextLine": true,
+        "extractFromMedia": true
+      }
+    },
+    {
+      "id": "quadro",
+      "name": "Quadro",
+      "pattern": "quadro ",
+      "type": "image",
+      "outputTemplate": "<div class=\"T-QUADRO\" data-interaction=\"true\"><div>{\"titulo\":\"{{titulo}}\",\"fonte\":\"{{fonte}}\",\"texto\":\"{{tabela}}\",\"accessibility\":\"{{titulo}}\",\"quadro\":\"\"}</div>Quadro</div>",
+      "options": {
+        "readNextLine": true,
+        "defaultTable": "%3Ctable%20style='border-collapse:%20collapse;%20width:%20100%25;'%20border='1'%3E%0A%3Ctbody%3E%0A%3Ctr%3E%0A%3Ctd%20style='width:%20100%25;'%3EQuadro%3C/td%3E%0A%3C/tr%3E%0A%3C/tbody%3E%0A%3C/table%3E"
+      }
+    },
+    {
+      "id": "unidade",
+      "name": "Unidade (título)",
+      "pattern": "UNIDADE",
+      "type": "title",
+      "outputTemplate": "<h2 class=\"title-vg\">{{text}}</h2>",
+      "options": {
+        "uppercase": true
+      }
+    },
+    {
+      "id": "titulo_numerico",
+      "name": "Título numérico (1., 1.1., 1.1.1.)",
+      "pattern": "^\\d",
+      "type": "title",
+      "outputTemplate": "{{output}}",
+      "options": {
+        "isNumeric": true
+      }
+    }
+  ]
+}

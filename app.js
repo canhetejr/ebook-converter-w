@@ -1,11 +1,12 @@
 /**
- * Orquestração: upload (clique + drag-and-drop), conversão no browser, download.
+ * Orquestração: carrega config, upload (clique + drag-and-drop), conversão no browser, download.
  * Estados: idle | fileSelected | converting | success | error
  */
 (function () {
   "use strict";
 
-  var MAX_SIZE_MB = 20;
+  var config = null;
+  var MAX_SIZE_MB = 100; // fallback
   var MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
   var dropZone = document.getElementById("drop-zone");
@@ -17,9 +18,51 @@
   var errorEl = document.getElementById("error");
   var fileInfoEl = document.getElementById("file-info");
   var spinnerEl = document.querySelector(".drop-zone__spinner");
+  var helpToggle = document.getElementById("help-toggle");
+  var helpContent = document.getElementById("help-content");
+  var helpList = document.getElementById("help-list");
 
   var state = "idle";
   var selectedFile = null;
+
+  // Carregar config ao iniciar
+  fetch("tags-config.json")
+    .then(function (res) {
+      if (!res.ok) throw new Error("Config não encontrado");
+      return res.json();
+    })
+    .then(function (data) {
+      config = data;
+      MAX_SIZE_MB = config.maxFileSizeMB || 100;
+      MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+      updateHelpList();
+      updateSubtitle();
+    })
+    .catch(function () {
+      // Fallback: config padrão embutido (mínimo)
+      config = { maxFileSizeMB: 100, tags: [] };
+      MAX_SIZE_MB = 100;
+      MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+    });
+
+  function updateSubtitle() {
+    var subtitle = document.querySelector(".header__subtitle");
+    if (subtitle) {
+      subtitle.textContent = "Arraste um .docx aqui ou clique para escolher. Até " + MAX_SIZE_MB + " MB.";
+    }
+  }
+
+  function updateHelpList() {
+    if (!helpList || !config || !config.tags) return;
+    helpList.innerHTML = "";
+    config.tags.forEach(function (tag) {
+      var li = document.createElement("li");
+      var patterns = Array.isArray(tag.pattern) ? tag.pattern : [tag.pattern];
+      var code = patterns.map(function (p) { return "<code>" + p + "</code>"; }).join(", ");
+      li.innerHTML = tag.name + ": " + code;
+      helpList.appendChild(li);
+    });
+  }
 
   function setState(s) {
     state = s;
@@ -133,7 +176,7 @@
         errorEl.classList.add("error--visible");
         return;
       }
-      convertDocxToEbook(buffer)
+      convertDocxToEbook(buffer, config)
         .then(function (text) {
           downloadText(text, selectedFile.name);
           setState("success");
@@ -153,6 +196,7 @@
   }
 
   dropZone.addEventListener("click", function (e) {
+    if (state === "converting") return;
     if (e.target === dropZone || e.target.closest(".drop-zone__inner")) {
       fileInput.click();
     }
@@ -164,6 +208,7 @@
   });
 
   dropZone.addEventListener("dragover", function (e) {
+    if (state === "converting") return;
     e.preventDefault();
     e.stopPropagation();
     dropZone.classList.add("drop-zone--dragover");
@@ -176,6 +221,7 @@
   });
 
   dropZone.addEventListener("drop", function (e) {
+    if (state === "converting") return;
     e.preventDefault();
     e.stopPropagation();
     dropZone.classList.remove("drop-zone--dragover");
@@ -205,11 +251,30 @@
   });
 
   dropZone.addEventListener("keydown", function (e) {
+    if (state === "converting") return;
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       fileInput.click();
     }
   });
 
+  if (helpToggle && helpContent) {
+    helpToggle.addEventListener("click", function () {
+      var isHidden = helpContent.classList.toggle("hidden");
+      helpToggle.setAttribute("aria-expanded", isHidden ? "false" : "true");
+      helpContent.setAttribute("aria-hidden", isHidden ? "true" : "false");
+    });
+  }
+
   setState("idle");
+
+  // Expor config para admin
+  window.appConfig = function () { return config; };
+  window.setAppConfig = function (newConfig) {
+    config = newConfig;
+    MAX_SIZE_MB = config.maxFileSizeMB || 100;
+    MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+    updateHelpList();
+    updateSubtitle();
+  };
 })();
