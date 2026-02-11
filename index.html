@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conversor E-Book</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <h1 class="header__title">Conversor E-Book</h1>
+      <p class="header__subtitle">Arraste um .docx aqui ou clique para escolher. Até 20 MB.</p>
+    </header>
+
+    <main class="main">
+      <div id="drop-zone" class="drop-zone" data-state="idle" role="button" tabindex="0" aria-label="Arraste um arquivo .docx ou clique para selecionar">
+        <div class="drop-zone__inner">
+          <span class="drop-zone__icon" aria-hidden="true"></span>
+          <p class="drop-zone__text drop-zone__text--idle">Arraste um .docx aqui ou clique para escolher</p>
+          <p id="file-info" class="drop-zone__file-info hidden"></p>
+          <div class="drop-zone__spinner hidden" aria-hidden="true"></div>
+        </div>
+        <input type="file" id="file-input" class="drop-zone__input" accept=".docx" aria-label="Selecionar arquivo">
+      </div>
+
+      <div class="actions">
+        <button type="button" id="btn-convert" class="btn btn--primary hidden">Converter</button>
+        <button type="button" id="btn-another" class="btn btn--secondary hidden">Converter outro</button>
+        <button type="button" id="btn-retry" class="btn btn--secondary hidden">Tentar de novo</button>
+      </div>
+
+      <p id="status" class="status" aria-live="polite"></p>
+      <p id="error" class="error" aria-live="assertive" aria-atomic="true"></p>
+    </main>
+
+    <section class="help">
+      <button type="button" class="help__toggle" id="help-toggle" aria-expanded="false" aria-controls="help-content">
+        Ver tags suportadas
+      </button>
+      <div id="help-content" class="help__content hidden" aria-hidden="true">
+        <p class="help__intro">Use estas tags no seu documento Word (.docx) para formatar o E-Book:</p>
+        <ul class="help__list">
+          <li><code>#Introdução#</code> … <code>#Introdução#</code></li>
+          <li><code>#Conclusão#</code>, <code>#Destaque#</code>, <code>#Apresentação#</code></li>
+          <li><code>#Citação#</code>, <code>#Caixa#</code>, <code>#Glossário#</code></li>
+          <li><code>#Video#</code> link, <code>#Reflita#</code>, <code>#Saiba mais#</code></li>
+          <li><code>#Atenção#</code>, <code>#Dica#</code>, <code>#Técnico#</code></li>
+          <li><code>#Dica de livro#</code>, <code>#Dica do professor#</code>, <code>#Dica de leitura#</code></li>
+          <li><code>#Indicação de filme#</code>, <code>#Na web#</code>, <code>#Referências#</code></li>
+          <li><code>#Infográfico interativo#</code>, <code>#Forca</code> palavra</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="converter.js"></script>
+  <script src="app.js"></script>
+  <script>
+    (function () {
+      var toggle = document.getElementById("help-toggle");
+      var content = document.getElementById("help-content");
+      if (toggle && content) {
+        toggle.addEventListener("click", function () {
+          var open = content.classList.toggle("hidden");
+          toggle.setAttribute("aria-expanded", open ? "false" : "true");
+          content.setAttribute("aria-hidden", open ? "true" : "false");
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# Backend (referência; não usado no deploy)
+backend/.venv/
+backend/__pycache__/
+backend/app/__pycache__/
+backend/app/converter/__pycache__/
+*.pyc
+.env
+.env.local
+
+# Sistema
+.DS_Store
+Thumbs.db
