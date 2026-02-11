@@ -259,17 +259,17 @@
       return texto + "%3C/ol%3E\"}</div>Bloco Busca</div>";
     }
     if (lower.indexOf("#video#") !== -1) {
-      var conteudo = paragrafoStrip.replace(/#Video#/gi, "").trim();
+      var conteudo = paragrafoStrip.replace(/#video#/gi, "").trim();
       return "<div class=\"T-VIDEO\" data-interaction=\"true\"><div>{\"link\":\"" + conteudo + "\",\"video\":\"\",\"pdf\":\"\"}</div>Vídeo</div>";
     }
-    if (lower.indexOf("figura ") === 0 && paras[paragrafoIndice + 1]) {
+    if (lower.indexOf("figura ") === 0 && paragrafoIndice + 1 < paras.length) {
       var titulo = paras[paragrafoIndice].text.split(":");
       var fonte = paras[paragrafoIndice + 1].text.split(":");
       var figura = "https://i.pinimg.com/736x/be/09/97/be0997e2d5732322bf552c6f2883c86e.jpg";
       listaAuxiliar.push(proxParagrafo);
       return "<div class=\"T-FIGURA\" data-interaction=\"true\"><div>{\"titulo\":\"" + (titulo[1] || "").trim() + "\",\"fonte\":\"" + (fonte[1] || "").trim() + "\",\"accessibility\":\"" + (titulo[1] || "").trim() + "\",\"imagem\":\"" + figura + "\"}</div>Figura</div>";
     }
-    if (lower.indexOf("quadro ") === 0 && paras[paragrafoIndice + 1]) {
+    if (lower.indexOf("quadro ") === 0 && paragrafoIndice + 1 < paras.length) {
       var tabela = "%3Ctable%20style='border-collapse:%20collapse;%20width:%20100%25;'%20border='1'%3E%0A%3Ctbody%3E%0A%3Ctr%3E%0A%3Ctd%20style='width:%20100%25;'%3EQuadro%3C/td%3E%0A%3C/tr%3E%0A%3C/tbody%3E%0A%3C/table%3E";
       titulo = paras[paragrafoIndice].text.split(":");
       fonte = paras[paragrafoIndice + 1].text.split(":");
@@ -348,8 +348,8 @@
       return texto.slice(0, texto.lastIndexOf("\n"));
     }
     if (lower.indexOf("#forca") !== -1) {
-      conteudo = paragrafoStrip.replace(/#Forca/gi, "").trim();
-      return "<div class=\"I-JOGOFORCA\" data-interaction=\"true\"><div>{\"palavra\":\"" + conteudo + "\"}</div>Forca</div><p></p>";
+      var conteudoForca = paragrafoStrip.replace(/#forca/gi, "").trim();
+      return "<div class=\"I-JOGOFORCA\" data-interaction=\"true\"><div>{\"palavra\":\"" + conteudoForca + "\"}</div>Forca</div><p></p>";
     }
 
     // Parágrafo normal
@@ -415,10 +415,14 @@
 
       if (paragrafoStrip.indexOf("#") === 0 && paragrafoStrip.lastIndexOf("#") === paragrafoStrip.length - 1 && proxParagrafo < paragrafosTotais - 1 && marcaNoTexto.length === 0) {
         marcaNoTexto.push(paragrafoStrip.toLowerCase());
-        if (doc.paragraphs[proxParagrafo + 1] && doc.paragraphs[proxParagrafo + 1].text.indexOf("#") !== 0) {
+        if (proxParagrafo + 1 < paragrafosTotais && doc.paragraphs[proxParagrafo + 1].text.indexOf("#") !== 0) {
           listaParagrafos = [];
           while (boleano) {
             proxParagrafo++;
+            if (proxParagrafo >= paragrafosTotais) {
+              boleano = false;
+              break;
+            }
             var pt = doc.paragraphs[proxParagrafo].text;
             if (pt.trim() !== "" && !/^\s*$/.test(pt)) {
               listaParagrafos.push(proxParagrafo);

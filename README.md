@@ -7,8 +7,7 @@ Aplicação web para converter arquivos DOCX com tags no formato E-Book (arquivo
 - **index.html** — Página única do app (upload, conversão, download).
 - **styles.css** — Estilos da interface.
 - **app.js** — Orquestração: drag-and-drop, validação, chamada ao conversor, download do .txt.
-- **converter.js** — Lógica de conversão DOCX → texto (porta do conversor em Python); usa JSZip para ler o .docx no browser.
-- **backend/** — Código de referência (API FastAPI + conversor Python). Não é usado no deploy; o site funciona só com os arquivos estáticos acima.
+- **converter.js** — Lógica de conversão DOCX → texto; usa JSZip para ler o .docx no browser.
 
 ## Uso
 
