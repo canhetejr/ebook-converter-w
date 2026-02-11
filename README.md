@@ -24,6 +24,7 @@ Aplicação web para converter arquivos DOCX com tags no formato E-Book (arquivo
 1. Abra o site (localmente ou na URL do GitHub Pages).
 2. Arraste um arquivo .docx para a zona de upload ou clique para escolher.
 3. Clique em **Converter**. O arquivo .txt será gerado e baixado automaticamente (mesmo nome do .docx, com extensão .txt).
+4. Após a conversão, use **Baixar para Realize** para gerar `contentHTML.json` e coloque o arquivo em `config/contentHTML.json` da pasta do projeto Realize, se você usa o programa Realize.
 
 Requisitos: arquivo Word (.docx) com tags conforme configuradas em `tags-config.json`. Limite padrão: **100 MB** (ajustável no config).
 
@@ -79,6 +80,20 @@ Quando o DOCX contém imagens (pasta `word/media/` interna ao ZIP) e uma tag do 
 - Preenche o placeholder `{{imagem}}` no template com o data URL.
 
 Fallback: se não houver imagens suficientes, usa URL padrão do template ou vazio.
+
+## Uso com o programa Realize
+
+O conversor gera HTML com blocos no formato esperado pela plataforma Realize. Para evitar “tela em branco” ou fechamento ao importar no programa Realize:
+
+1. **Baixar para Realize:** após converter, clique em **Baixar para Realize** para gerar `contentHTML.json` (arquivo com `{"html": "..."}`). Coloque esse arquivo em `config/contentHTML.json` na pasta do seu projeto Realize.
+2. **JSON válido:** títulos, links e textos vindos do Word são escapados para que o JSON dentro de cada bloco seja válido (evitando erro de parse no Realize).
+3. **Validação:** se algum bloco tiver JSON inválido (por exemplo aspas no texto), um aviso será exibido após o download. Corrija o documento Word e converta novamente.
+4. **Classes (slugs) compatíveis:** as tags principais usam as mesmas classes que o Realize reconhece:
+   - **D-CAIXA-DE-TEXTO** — Introdução, Conclusão, Referências, Caixa.
+   - **D-BLOCO-DE-CONTEUDO** — Destaque, Reflita (e blocos de conteúdo genérico).
+   - **T-VIDEO**, **I-IMAGEM**, **I-ZSANFONA**, etc. conforme definido em `tags-config.json`.
+
+Outras tags (Saiba Mais, Atenção, Glossário, etc.) podem usar classes próprias; para compatibilidade total com o Realize, confira o `resources.json` do seu projeto e ajuste os templates no admin se necessário.
 
 ## Deploy no GitHub Pages (tudo via Git)
 

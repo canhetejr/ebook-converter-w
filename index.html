@@ -4,11 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Conversor E-Book</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="page">
     <header class="header">
+      <img src="images/logo.png" alt="UniCV" class="header__logo" width="160" height="48" onerror="this.style.display='none'">
       <h1 class="header__title">Conversor E-Book</h1>
       <p class="header__subtitle">Arraste um .docx aqui ou clique para escolher</p>
       <a href="#" id="admin-link" class="header__admin-link" aria-label="Configurar tags">Configurar tags</a>
@@ -28,6 +30,7 @@
       <div class="actions">
         <button type="button" id="btn-convert" class="btn btn--primary hidden">Converter</button>
         <button type="button" id="btn-another" class="btn btn--secondary hidden">Converter outro</button>
+        <button type="button" id="btn-realize" class="btn btn--secondary hidden">Baixar para Realize</button>
         <button type="button" id="btn-retry" class="btn btn--secondary hidden">Tentar de novo</button>
       </div>
 

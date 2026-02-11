@@ -201,6 +201,20 @@
     return lower.indexOf(pattern.toLowerCase()) !== -1 ? pattern : null;
   }
 
+  /**
+   * Escapa uma string para uso como valor dentro de um JSON (evita quebra de parse no Realize).
+   * Substitui \ por \\, " por \", e normaliza quebras de linha/tab.
+   */
+  function escapeJsonString(str) {
+    if (str == null || str === undefined) return "";
+    var s = String(str);
+    return s
+      .replace(/\\/g, "\\\\")
+      .replace(/"/g, '\\"')
+      .replace(/\r\n|\r|\n/g, "\\n")
+      .replace(/\t/g, "\\t");
+  }
+
   function processTag(tag, paras, paragrafoStrip, paragrafoIndice, proxParagrafo, listaParagrafos, listaAuxiliar, images) {
     var lower = paragrafoStrip.toLowerCase();
     var matched = matchPattern(paragrafoStrip, tag.pattern);
@@ -242,7 +256,7 @@
           var part0 = colonIdx !== -1 ? aux.slice(0, colonIdx) : aux;
           var part1 = colonIdx !== -1 ? aux.slice(colonIdx + 1) : "";
           var itemOut = opts.itemTemplate || "{{titulo}}: {{content}}";
-          itemOut = itemOut.replace(/\{\{titulo\}\}/g, part0).replace(/\{\{content\}\}/g, "%3Cp%20style='text-align:%20justify;'%3E" + part1 + "%3C/p%3E%0A");
+          itemOut = itemOut.replace(/\{\{titulo\}\}/g, escapeJsonString(part0)).replace(/\{\{content\}\}/g, "%3Cp%20style='text-align:%20justify;'%3E" + part1 + "%3C/p%3E%0A");
           items += itemOut + "\n";
         }
         output = output.replace(/\{\{items\}\}/g, items.slice(0, items.lastIndexOf("\n")));
@@ -256,7 +270,7 @@
             content += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
           }
         }
-        output = output.replace(/\{\{link\}\}/g, linkFound);
+        output = output.replace(/\{\{link\}\}/g, escapeJsonString(linkFound));
       } else if (opts.extractVideoLink) {
         linkFound = "";
         for (i = 0; i < listaParagrafos.length; i++) {
@@ -273,7 +287,7 @@
             }
           }
         }
-        output = output.replace(/\{\{titulo\}\}/g, titulo).replace(/\{\{link\}\}/g, linkFound);
+        output = output.replace(/\{\{titulo\}\}/g, escapeJsonString(titulo)).replace(/\{\{link\}\}/g, escapeJsonString(linkFound));
       } else {
         for (i = 0; i < listaParagrafos.length; i++) {
           content += "%3Cp%20style='text-align:%20justify;'%3E" + formatarBoxTexto(paras[listaParagrafos[i]].runs) + "%3C/p%3E%0A";
@@ -287,7 +301,7 @@
             break;
           }
         }
-        output = output.replace(/\{\{titulo\}\}/g, titulo);
+        output = output.replace(/\{\{titulo\}\}/g, escapeJsonString(titulo));
       }
       output = output.replace(/\{\{content\}\}/g, content);
       return output;
@@ -296,11 +310,11 @@
     if (tag.type === "single") {
       if (opts.extractLink) {
         var linkContent = paragrafoStrip.replace(new RegExp(matched, "gi"), "").trim();
-        return output.replace(/\{\{link\}\}/g, linkContent);
+        return output.replace(/\{\{link\}\}/g, escapeJsonString(linkContent));
       }
       if (opts.extractWord) {
         var word = paragrafoStrip.replace(new RegExp(matched, "gi"), "").trim();
-        return output.replace(/\{\{palavra\}\}/g, word);
+        return output.replace(/\{\{palavra\}\}/g, escapeJsonString(word));
       }
     }
 
@@ -314,11 +328,11 @@
         imagem = "https://i.pinimg.com/736x/be/09/97/be0997e2d5732322bf552c6f2883c86e.jpg";
       }
       listaAuxiliar.push(proxParagrafo);
-      output = output.replace(/\{\{titulo\}\}/g, (titulo[1] || "").trim());
-      output = output.replace(/\{\{fonte\}\}/g, (fonte[1] || "").trim());
-      output = output.replace(/\{\{imagem\}\}/g, imagem);
+      output = output.replace(/\{\{titulo\}\}/g, escapeJsonString((titulo[1] || "").trim()));
+      output = output.replace(/\{\{fonte\}\}/g, escapeJsonString((fonte[1] || "").trim()));
+      output = output.replace(/\{\{imagem\}\}/g, escapeJsonString(imagem));
       if (opts.defaultTable) {
-        output = output.replace(/\{\{tabela\}\}/g, opts.defaultTable);
+        output = output.replace(/\{\{tabela\}\}/g, escapeJsonString(opts.defaultTable));
       }
       return output;
     }
@@ -490,6 +504,70 @@
   }
 
   /**
+   * Valida se todos os blocos <div>{...}</div> no HTML contêm JSON válido.
+   * @param {string} htmlString - HTML gerado pelo conversor
+   * @returns {{ valid: boolean, message?: string, index?: number }}
+   */
+  function validateBlocksJson(htmlString) {
+    if (!htmlString || typeof htmlString !== "string") return { valid: true };
+    var re = /<div>\s*\{/g;
+    var match;
+    while ((match = re.exec(htmlString)) !== null) {
+      var jsonStart = match.index + match[0].length - 1;
+      var depth = 0;
+      var i = jsonStart;
+      var inString = false;
+      var escape = false;
+      var quote = null;
+      while (i < htmlString.length) {
+        var c = htmlString[i];
+        if (escape) {
+          escape = false;
+          i++;
+          continue;
+        }
+        if (c === "\\" && inString) {
+          escape = true;
+          i++;
+          continue;
+        }
+        if ((c === '"' || c === "'") && !inString) {
+          inString = true;
+          quote = c;
+          i++;
+          continue;
+        }
+        if (c === quote && inString) {
+          inString = false;
+          i++;
+          continue;
+        }
+        if (!inString) {
+          if (c === "{") depth++;
+          else if (c === "}") {
+            depth--;
+            if (depth === 0) {
+              var jsonStr = htmlString.slice(jsonStart, i + 1);
+              try {
+                JSON.parse(jsonStr);
+              } catch (e) {
+                return {
+                  valid: false,
+                  message: "Um bloco tem JSON inválido (ex.: aspas no texto). Tente remover aspas do Word ou verifique o conteúdo.",
+                  index: match.index
+                };
+              }
+              break;
+            }
+          }
+        }
+        i++;
+      }
+    }
+    return { valid: true };
+  }
+
+  /**
    * Converte um DOCX (ArrayBuffer) para o texto no formato E-Book.
    * @param {ArrayBuffer} arrayBuffer - Bytes do arquivo .docx
    * @param {Object} config - Configuração de tags (opcional; usa padrão se não fornecido)
@@ -533,4 +611,5 @@
   }
 
   global.convertDocxToEbook = convertDocxToEbook;
+  global.validateBlocksJson = validateBlocksJson;
 })(typeof window !== "undefined" ? window : this);

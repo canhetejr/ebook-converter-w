@@ -6,21 +6,21 @@
       "name": "Introdução",
       "pattern": "#introdução#",
       "type": "block",
-      "outputTemplate": "<div class=\"L-INTRODUCAO\" data-interaction=\"true\"><div>{\"texto\":\"{{content}}\"}</div>Introdução</div>"
+      "outputTemplate": "<div class=\"D-CAIXA-DE-TEXTO\" data-interaction=\"true\"><div>{\"title\":\"\",\"paragraph\":\"{{content}}\"}</div>Introdução</div>"
     },
     {
       "id": "conclusao",
       "name": "Conclusão",
       "pattern": "#conclusão#",
       "type": "block",
-      "outputTemplate": "<div class=\"L-CONCLUSION\" data-interaction=\"true\"><div>{\"texto\":\"{{content}}\"}</div>Conclusão</div>"
+      "outputTemplate": "<div class=\"D-CAIXA-DE-TEXTO\" data-interaction=\"true\"><div>{\"title\":\"\",\"paragraph\":\"{{content}}\"}</div>Conclusão</div>"
     },
     {
       "id": "referencias",
       "name": "Referências",
       "pattern": "#referências#",
       "type": "block",
-      "outputTemplate": "<div class=\"L-REFERENCIASBB\" data-interaction=\"true\"><div>{\"texto\":\"{{content}}\"}</div>Referências Bibliográficas</div><p></p>",
+      "outputTemplate": "<div class=\"D-CAIXA-DE-TEXTO\" data-interaction=\"true\"><div>{\"title\":\"Referências Bibliográficas\",\"paragraph\":\"{{content}}\"}</div>Referências Bibliográficas</div><p></p>",
       "options": {
         "hasLink": true,
         "useEstilo": true
@@ -31,7 +31,7 @@
       "name": "Destaque/Apresentação",
       "pattern": ["#destaque#", "#apresentação#"],
       "type": "block",
-      "outputTemplate": "<div class=\"D-DESTAQUE\" data-interaction=\"true\"><div>{\"destaque\":\"{{content}}\"}</div>Destaque</div>"
+      "outputTemplate": "<div class=\"D-BLOCO-DE-CONTEUDO\" data-interaction=\"true\"><div>{\"overline\":\"\",\"title\":\"\",\"image\":\"\",\"paragraph\":\"{{content}}\"}</div>Destaque</div>"
     },
     {
       "id": "citacao",
@@ -45,7 +45,7 @@
       "name": "Caixa",
       "pattern": "#caixa#",
       "type": "block",
-      "outputTemplate": "<div class=\"D-CAIXA\" data-interaction=\"true\"><div>{\"caixa\":\"{{content}}\"}</div>Caixa</div>",
+      "outputTemplate": "<div class=\"D-CAIXA-DE-TEXTO\" data-interaction=\"true\"><div>{\"title\":\"\",\"paragraph\":\"{{content}}\"}</div>Caixa</div>",
       "options": {
         "formatAsList": true
       }
@@ -75,7 +75,7 @@
       "name": "Reflita",
       "pattern": "#reflita#",
       "type": "block",
-      "outputTemplate": "<div class=\"B-REFLITA\" data-interaction=\"true\"><div>{\"conteudo\":\"{{content}}\",\"link\":\"\",\"pdf\":\"\"}</div>Reflita</div>"
+      "outputTemplate": "<div class=\"D-BLOCO-DE-CONTEUDO\" data-interaction=\"true\"><div>{\"overline\":\"\",\"title\":\"Reflita\",\"image\":\"\",\"paragraph\":\"{{content}}\"}</div>Reflita</div>"
     },
     {
       "id": "saiba_mais",

@@ -9,46 +9,59 @@
 }
 
 :root {
-  --bg: #e8eaf0;
-  --bg-gradient: linear-gradient(135deg, #e0e5ef 0%, #e8ecf4 40%, #dde2eb 100%);
-  --glass: rgba(255, 255, 255, 0.45);
-  --glass-strong: rgba(255, 255, 255, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.6);
-  --glass-border-subtle: rgba(255, 255, 255, 0.35);
-  --primary: #0071e3;
-  --primary-hover: #0077ed;
-  --primary-active: #006edb;
+  /* Paleta UniCV — verde e amarelo/dourado do logo */
+  --green: #5F6F41;
+  --green-hover: #6d7f4d;
+  --green-active: #536035;
+  --gold: #BA9334;
+  --gold-hover: #c9a03d;
+  --gold-active: #a6822e;
+  --bg: #eef0e8;
+  --bg-gradient: linear-gradient(135deg, #e8ebe0 0%, #f0f2e8 35%, #e2e6d8 70%, #e8ecdf 100%);
+  --glass: rgba(255, 255, 255, 0.52);
+  --glass-strong: rgba(255, 255, 255, 0.72);
+  --glass-tint: rgba(95, 111, 65, 0.06);
+  --glass-gold: rgba(186, 147, 52, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-border-subtle: rgba(255, 255, 255, 0.4);
+  --primary: var(--green);
+  --primary-hover: var(--green-hover);
+  --primary-active: var(--green-active);
+  --accent: var(--gold);
+  --accent-hover: var(--gold-hover);
   --text: #1d1d1f;
   --text-secondary: #5c5c66;
   --text-tertiary: #86868b;
-  --error: #ff3b30;
-  --success: #34c759;
-  --warning: #ff9500;
-  --radius-sm: 12px;
-  --radius-md: 20px;
-  --radius-lg: 28px;
-  --blur: 20px;
-  --blur-strong: 32px;
-  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.06), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
-  --shadow-glass-hover: 0 12px 40px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
-  --shadow-elevated: 0 24px 64px rgba(0, 0, 0, 0.1), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
-  --transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --error: #c53030;
+  --success: #2d7a3e;
+  --warning: #b8860b;
+  --radius-sm: 14px;
+  --radius-md: 22px;
+  --radius-lg: 32px;
+  --blur: 24px;
+  --blur-strong: 40px;
+  --shadow-glass: 0 10px 40px rgba(95, 111, 65, 0.08), 0 1px 0 rgba(255, 255, 255, 0.85) inset;
+  --shadow-glass-hover: 0 16px 48px rgba(95, 111, 65, 0.12), 0 1px 0 rgba(255, 255, 255, 0.95) inset;
+  --shadow-elevated: 0 28px 72px rgba(95, 111, 65, 0.12), 0 1px 0 rgba(255, 255, 255, 0.65) inset;
+  --transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f1014;
-    --bg-gradient: linear-gradient(135deg, #14161c 0%, #1a1c24 40%, #12141a 100%);
+    --bg: #0f1210;
+    --bg-gradient: linear-gradient(135deg, #121610 0%, #1a1e16 40%, #0f130d 100%);
     --glass: rgba(255, 255, 255, 0.06);
     --glass-strong: rgba(255, 255, 255, 0.12);
+    --glass-tint: rgba(95, 111, 65, 0.12);
+    --glass-gold: rgba(186, 147, 52, 0.08);
     --glass-border: rgba(255, 255, 255, 0.1);
     --glass-border-subtle: rgba(255, 255, 255, 0.06);
     --text: #f5f5f7;
     --text-secondary: #a1a1a6;
     --text-tertiary: #636366;
-    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
-    --shadow-glass-hover: 0 12px 40px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.08) inset;
-    --shadow-elevated: 0 24px 64px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    --shadow-glass: 0 10px 40px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+    --shadow-glass-hover: 0 16px 48px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+    --shadow-elevated: 0 28px 72px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
   }
 }
 
@@ -80,11 +93,41 @@ body {
   position: relative;
 }
 
+.header__logo {
+  margin-bottom: 1.25rem;
+  height: auto;
+  max-height: 52px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(95, 111, 65, 0.15));
+}
+
+/* Faixa em glass com tom verde para o logo branco contrastar */
+.header::before {
+  content: "";
+  position: absolute;
+  top: -2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120%;
+  max-width: 420px;
+  height: 150px;
+  background: linear-gradient(180deg, rgba(95, 111, 65, 0.35) 0%, rgba(95, 111, 65, 0.12) 45%, rgba(255, 255, 255, 0.4) 100%);
+  backdrop-filter: blur(var(--blur-strong));
+  -webkit-backdrop-filter: blur(var(--blur-strong));
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-top: none;
+  box-shadow: 0 8px 32px rgba(95, 111, 65, 0.1);
+  pointer-events: none;
+  z-index: -1;
+}
+
 .header__title {
   font-size: 2.5rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   margin-bottom: 0.5rem;
+  color: var(--primary);
 }
 
 .header__subtitle {
@@ -99,6 +142,7 @@ body {
   right: 0;
   font-size: 0.9375rem;
   color: var(--primary);
+  font-weight: 500;
   text-decoration: none;
   padding: 0.5rem 1rem;
   border-radius: var(--radius-sm);
@@ -110,6 +154,7 @@ body {
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--glass-border-subtle);
+  color: var(--green-hover);
 }
 
 .header__admin-link:focus-visible {
@@ -117,9 +162,10 @@ body {
   outline-offset: 2px;
 }
 
-/* Drop zone — liquid glass */
+/* Drop zone — liquid glass com tom verde/dourado */
 .drop-zone {
-  background: var(--glass);
+  background: linear-gradient(145deg, var(--glass) 0%, var(--glass-strong) 100%);
+  background-color: var(--glass);
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--glass-border);
@@ -132,10 +178,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.drop-zone::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--glass-tint) 0%, transparent 50%, var(--glass-gold) 100%);
+  pointer-events: none;
+  border-radius: inherit;
 }
 
 .drop-zone:hover {
-  border-color: rgba(0, 113, 227, 0.4);
+  border-color: rgba(95, 111, 65, 0.5);
   background: var(--glass-strong);
   box-shadow: var(--shadow-glass-hover);
 }
@@ -148,7 +205,7 @@ body {
 .drop-zone.drop-zone--dragover {
   border-color: var(--primary);
   background: var(--glass-strong);
-  box-shadow: var(--shadow-glass-hover);
+  box-shadow: var(--shadow-glass-hover), 0 0 0 3px rgba(95, 111, 65, 0.15);
 }
 
 .drop-zone[data-state="converting"] {
@@ -158,6 +215,8 @@ body {
 .drop-zone__inner {
   text-align: center;
   width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 .drop-zone__icon {
@@ -165,9 +224,10 @@ body {
   width: 64px;
   height: 64px;
   margin-bottom: 1.5rem;
-  background: var(--primary);
+  background: linear-gradient(145deg, var(--primary) 0%, var(--green-hover) 100%);
   border-radius: 50%;
   position: relative;
+  box-shadow: 0 6px 20px rgba(95, 111, 65, 0.35), 0 1px 0 rgba(255, 255, 255, 0.2) inset;
 }
 
 .drop-zone__icon::before {
@@ -244,12 +304,14 @@ body {
 }
 
 .btn--primary {
-  background: var(--primary);
+  background: linear-gradient(145deg, var(--primary) 0%, var(--green-hover) 100%);
   color: #ffffff;
+  box-shadow: 0 4px 16px rgba(95, 111, 65, 0.35), 0 1px 0 rgba(255, 255, 255, 0.2) inset;
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: var(--primary-hover);
+  background: linear-gradient(145deg, var(--green-hover) 0%, var(--primary) 100%);
+  box-shadow: 0 6px 24px rgba(95, 111, 65, 0.4), 0 1px 0 rgba(255, 255, 255, 0.25) inset;
 }
 
 .btn--primary:active:not(:disabled) {
@@ -262,16 +324,18 @@ body {
 }
 
 .btn--secondary {
-  background: var(--glass);
+  background: linear-gradient(145deg, var(--glass) 0%, rgba(255, 255, 255, 0.5) 100%);
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
-  color: var(--text);
+  color: var(--primary);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-glass);
 }
 
 .btn--secondary:hover:not(:disabled) {
   background: var(--glass-strong);
+  color: var(--primary-hover);
+  border-color: rgba(95, 111, 65, 0.3);
   box-shadow: var(--shadow-glass-hover);
 }
 
@@ -298,6 +362,11 @@ body {
   font-weight: 500;
 }
 
+.status--warning {
+  color: var(--warning);
+  font-weight: 500;
+}
+
 .error {
   text-align: center;
   margin-top: 0.75rem;
@@ -318,7 +387,7 @@ body {
   border: none;
   color: var(--primary);
   font-size: 1rem;
-  font-weight: 400;
+  font-weight: 500;
   cursor: pointer;
   padding: 0.5rem 0;
   text-decoration: none;
@@ -327,6 +396,7 @@ body {
 }
 
 .help__toggle:hover {
+  color: var(--accent);
   text-decoration: underline;
 }
 
@@ -339,13 +409,27 @@ body {
 .help__content {
   margin-top: 1.5rem;
   padding: 1.5rem;
-  background: var(--glass);
+  background: linear-gradient(145deg, var(--glass) 0%, var(--glass-strong) 100%);
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
   border-radius: var(--radius-md);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-glass);
   transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.help__content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+  opacity: 0.6;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
 .help__intro {
@@ -370,7 +454,7 @@ body {
   content: "•";
   position: absolute;
   left: 0;
-  color: var(--primary);
+  color: var(--accent);
   font-weight: 600;
 }
 

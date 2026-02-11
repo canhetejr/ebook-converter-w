@@ -13,6 +13,7 @@
   var fileInput = document.getElementById("file-input");
   var btnConvert = document.getElementById("btn-convert");
   var btnAnother = document.getElementById("btn-another");
+  var btnRealize = document.getElementById("btn-realize");
   var btnRetry = document.getElementById("btn-retry");
   var statusEl = document.getElementById("status");
   var errorEl = document.getElementById("error");
@@ -24,6 +25,7 @@
 
   var state = "idle";
   var selectedFile = null;
+  var lastConvertedText = null;
 
   // Carregar config ao iniciar
   fetch("tags-config.json")
@@ -78,15 +80,18 @@
         fileInfoEl.classList.add("hidden");
         btnConvert.classList.add("hidden");
         btnAnother.classList.add("hidden");
+        if (btnRealize) btnRealize.classList.add("hidden");
         btnRetry.classList.add("hidden");
         if (spinnerEl) spinnerEl.classList.add("hidden");
         selectedFile = null;
         fileInput.value = "";
+        lastConvertedText = null;
         break;
       case "fileSelected":
         fileInfoEl.classList.remove("hidden");
         btnConvert.classList.remove("hidden");
         btnAnother.classList.add("hidden");
+        if (btnRealize) btnRealize.classList.add("hidden");
         btnRetry.classList.add("hidden");
         if (spinnerEl) spinnerEl.classList.add("hidden");
         break;
@@ -94,6 +99,7 @@
         fileInfoEl.classList.remove("hidden");
         btnConvert.classList.add("hidden");
         btnAnother.classList.add("hidden");
+        if (btnRealize) btnRealize.classList.add("hidden");
         btnRetry.classList.add("hidden");
         if (spinnerEl) spinnerEl.classList.remove("hidden");
         statusEl.textContent = "Convertendo…";
@@ -104,6 +110,7 @@
         fileInfoEl.classList.add("hidden");
         btnConvert.classList.add("hidden");
         btnAnother.classList.remove("hidden");
+        if (btnRealize) btnRealize.classList.remove("hidden");
         btnRetry.classList.add("hidden");
         if (spinnerEl) spinnerEl.classList.add("hidden");
         statusEl.textContent = "Pronto. Seu arquivo foi baixado.";
@@ -114,6 +121,7 @@
         fileInfoEl.classList.remove("hidden");
         btnConvert.classList.add("hidden");
         btnAnother.classList.add("hidden");
+        if (btnRealize) btnRealize.classList.add("hidden");
         btnRetry.classList.remove("hidden");
         if (spinnerEl) spinnerEl.classList.add("hidden");
         errorEl.setAttribute("aria-live", "assertive");
@@ -161,6 +169,19 @@
     URL.revokeObjectURL(url);
   }
 
+  function downloadContentHTMLJson(htmlContent, baseName) {
+    var name = (baseName || "ebook").replace(/\.docx$/i, "") + "-contentHTML.json";
+    var payload = { html: htmlContent };
+    var json = JSON.stringify(payload);
+    var blob = new Blob([json], { type: "application/json; charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function doConvert() {
     if (!selectedFile || state !== "fileSelected") return;
     setState("converting");
@@ -178,8 +199,14 @@
       }
       convertDocxToEbook(buffer, config)
         .then(function (text) {
+          lastConvertedText = text;
           downloadText(text, selectedFile.name);
           setState("success");
+          var validation = typeof validateBlocksJson !== "undefined" ? validateBlocksJson(text) : { valid: true };
+          if (!validation.valid && validation.message) {
+            statusEl.textContent = "Arquivo baixado. Aviso: " + validation.message;
+            statusEl.className = "status status--warning";
+          }
         })
         .catch(function (err) {
           setState("error");
@@ -238,6 +265,15 @@
     e.preventDefault();
     setState("idle");
   });
+
+  if (btnRealize) {
+    btnRealize.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (lastConvertedText != null) {
+        downloadContentHTMLJson(lastConvertedText, selectedFile ? selectedFile.name : "ebook");
+      }
+    });
+  }
 
   btnRetry.addEventListener("click", function (e) {
     e.preventDefault();
