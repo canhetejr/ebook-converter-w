@@ -199,14 +199,15 @@
       }
       convertDocxToEbook(buffer, config)
         .then(function (text) {
-          lastConvertedText = text;
           var validation = typeof validateBlocksJson !== "undefined" ? validateBlocksJson(text) : { valid: true };
           if (!validation.valid && validation.message) {
+            lastConvertedText = null;
             setState("error");
             errorEl.textContent = validation.message;
             errorEl.classList.add("error--visible");
             return;
           }
+          lastConvertedText = text;
           downloadText(text, selectedFile.name);
           setState("success");
         })
